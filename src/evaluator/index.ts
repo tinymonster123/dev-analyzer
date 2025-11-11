@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { buildBasePrompt, mergePrompts } from './prompt';
+import { createPromptBundle } from './prompt';
 import {
   LoadEvaluationContextOptions,
   EvaluationContext,
@@ -30,19 +30,14 @@ export const loadEvaluationContext = async (
   const relatedPaths = extractRelatedPaths(transform.metrics, configCandidates);
   const relatedFiles = await readProjectFiles(cwd, relatedPaths);
 
-  const basePrompt = buildBasePrompt({ transform });
-  const combinedPrompt = mergePrompts(basePrompt, customPrompt);
+  const promptBundle = createPromptBundle(transform, customPrompt);
 
   return {
     cwd,
     framework: transform.framework,
     metrics: transform.metrics,
     transform,
-    prompt: {
-      base: basePrompt,
-      custom: customPrompt,
-      combined: combinedPrompt,
-    },
+    prompt: promptBundle,
     configFiles,
     relatedFiles,
   };

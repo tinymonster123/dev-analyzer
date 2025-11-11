@@ -1,13 +1,12 @@
 import { LogTransformResult } from '../logTransformer/types';
-import { EvaluationContext, Recommendation } from './types';
+import { EvaluationContext, PromptBundle, Recommendation } from './types';
 import { PROMPT_HEADER } from './constants';
 
-export interface BuildPromptOptions {
-  transform: LogTransformResult;
-  additionalContext?: string;
-}
-
-export const buildBasePrompt = ({ transform, additionalContext }: BuildPromptOptions): string => {
+export const createPromptBundle = (
+  transform: LogTransformResult,
+  customPrompt?: string,
+  additionalContext?: string
+): PromptBundle => {
   const { framework, metrics } = transform;
   const errorCount = metrics.errors.length;
   const warningCount = metrics.warnings.length;
@@ -38,12 +37,14 @@ export const buildBasePrompt = ({ transform, additionalContext }: BuildPromptOpt
     sections.push('', additionalContext.trim());
   }
 
-  return sections.join('\n');
-};
+  const base = sections.join('\n');
+  const combined = customPrompt ? `${base}\n\nUser instructions:\n${customPrompt.trim()}` : base;
 
-export const mergePrompts = (base: string, custom?: string): string => {
-  if (!custom) return base;
-  return `${base}\n\nUser instructions:\n${custom.trim()}`;
+  return {
+    base,
+    custom: customPrompt,
+    combined,
+  };
 };
 
 export const buildLlmPrompt = (
