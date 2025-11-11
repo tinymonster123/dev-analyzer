@@ -1,99 +1,84 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { EvaluationResult } from '../evaluator/types';
-import { ConsoleReportOptions, JsonReportOptions, JsonReportPayload } from './types';
-import {
-  COLOR_RESET,
-  COLOR_BOLD,
-  COLOR_DIM,
-  COLOR_GREEN,
-  COLOR_YELLOW,
-  COLOR_RED,
-  COLOR_CYAN,
-  DEFAULT_REPORT_DIR,
-  DEFAULT_REPORT_FILENAME,
-  LEVEL_COLOR_MAP,
-  RECOMMENDATION_COLOR_MAP,
-} from './constants';
+import { TextReportOptions, JsonReportOptions, JsonReportPayload } from './types';
+import { DEFAULT_REPORT_DIR, DEFAULT_REPORT_FILENAME } from './constants';
 
 const NEWLINE = '\n';
 
-export const renderConsoleReport = (
+const renderTextReport = (
   result: EvaluationResult,
-  options: ConsoleReportOptions = {}
+  options: TextReportOptions = {}
 ): string => {
   const { context } = result;
-  const useColor = options.useColor ?? process.stdout.isTTY;
-  const indent = ' '.repeat(options.indent ?? 2);
+  const indent = '  ';
+  const lines: string[] = [];
 
-  const colorize = (color: string, value: string) => (useColor ? `${color}${value}${COLOR_RESET}` : value);
-  const bold = (value: string) => (useColor ? `${COLOR_BOLD}${value}${COLOR_RESET}` : value);
-  const dim = (value: string) => (useColor ? `${COLOR_DIM}${value}${COLOR_RESET}` : value);
-
-  const header = bold('Dev Analyzer Report');
-  const scoreColor = LEVEL_COLOR_MAP[result.level] ?? COLOR_GREEN;
-  const scoreLine = `${bold('Score')}: ${colorize(scoreColor, `${result.score}/100`)} (${result.level})`;
-
-  const lines: string[] = [header, `${bold('Framework')}: ${context.framework || 'Unknown'}`, scoreLine];
-  lines.push(`${bold('Summary')}: ${result.summary}`);
+  lines.push('Dev Analyzer Report');
+  lines.push('===================');
+  lines.push('');
+  lines.push(`Framework: ${context.framework || 'Unknown'}`);
+  lines.push(`Score: ${result.score}/100 (${result.level})`);
+  lines.push(`Summary: ${result.summary}`);
+  lines.push('');
 
   if (context.metrics.buildEvents.length) {
     const longest = Number(context.metrics.summary?.longestBuildMs ?? 0);
-    const longestLine = longest ? `Longest build: ${longest} ms` : null;
-    const buildLine = `Build events: ${context.metrics.buildEvents.length}`;
-    lines.push(`${bold('Build')}: ${buildLine}${longestLine ? ` · ${longestLine}` : ''}`);
+    lines.push('Build Metrics:');
+    lines.push(`${indent}Events: ${context.metrics.buildEvents.length}`);
+    if (longest) {
+      lines.push(`${indent}Longest build: ${longest} ms`);
+    }
+    lines.push('');
   }
 
   if (result.recommendations.length) {
-    lines.push('', bold('Recommendations:'));
+    lines.push('Recommendations:');
     result.recommendations.forEach((rec) => {
-      const color = RECOMMENDATION_COLOR_MAP[rec.level] ?? COLOR_CYAN;
-      lines.push(`${indent}${colorize(color, `[${rec.level.toUpperCase()}]`)} ${rec.message}`);
+      lines.push(`${indent}[${rec.level.toUpperCase()}] ${rec.message}`);
     });
+    lines.push('');
   }
 
   if (result.llm?.summary) {
-    lines.push('', bold('LLM Insights:'));
+    lines.push('LLM Insights:');
     result.llm.summary.split(/\r?\n/).forEach((line) => {
       lines.push(`${indent}${line}`);
     });
-  }
-
-  if (options.verbose) {
-    lines.push('', bold('Config files:'));
-    context.configFiles.forEach((file) => {
-      const statusColor = file.exists ? COLOR_GREEN : COLOR_YELLOW;
-      const statusLabel = file.exists ? 'found' : 'missing';
-      lines.push(
-        `${indent}${colorize(statusColor, statusLabel.padEnd(8))} ${file.path}${
-          file.reason ? dim(` (${file.reason})`) : ''
-        }`
-      );
-    });
-
-    if (context.relatedFiles.length) {
-      lines.push('', bold('Related files:'));
-      context.relatedFiles.forEach((file) => {
-        const statusColor = file.exists ? COLOR_GREEN : COLOR_YELLOW;
-        const statusLabel = file.exists ? 'found' : 'missing';
-        lines.push(
-          `${indent}${colorize(statusColor, statusLabel.padEnd(8))} ${file.path}${
-            file.reason ? dim(` (${file.reason})`) : ''
-          }`
-        );
-      });
-    }
+    lines.push('');
   }
 
   if (result.issues.length) {
-    lines.push('', bold('Issues:'));
-    result.issues.slice(0, options.verbose ? result.issues.length : 10).forEach((issue) => {
-      const isError = issue.level === 'error';
-      const levelColor = isError ? COLOR_RED : COLOR_YELLOW;
-      lines.push(`${indent}${colorize(levelColor, `[${issue.level}]`)} ${issue.message}`);
+    lines.push('Issues:');
+    const limit = options.verbose ? result.issues.length : Math.min(10, result.issues.length);
+    result.issues.slice(0, limit).forEach((issue) => {
+      lines.push(`${indent}[${issue.level}] ${issue.message}`);
     });
-    if (!options.verbose && result.issues.length > 10) {
-      lines.push(`${indent}${dim(`… ${result.issues.length - 10} more`)}`);
+    if (!options.verbose && result.issues.length > limit) {
+      lines.push(`${indent}… ${result.issues.length - limit} more`);
+    }
+    lines.push('');
+  }
+
+  if (options.verbose) {
+    if (context.configFiles.length) {
+      lines.push('Config Files:');
+      context.configFiles.forEach((file) => {
+        const status = file.exists ? 'found' : 'missing';
+        const reason = file.reason ? ` (${file.reason})` : '';
+        lines.push(`${indent}${status.padEnd(8)} ${file.path}${reason}`);
+      });
+      lines.push('');
+    }
+
+    if (context.relatedFiles.length) {
+      lines.push('Related Files:');
+      context.relatedFiles.forEach((file) => {
+        const status = file.exists ? 'found' : 'missing';
+        const reason = file.reason ? ` (${file.reason})` : '';
+        lines.push(`${indent}${status.padEnd(8)} ${file.path}${reason}`);
+      });
+      lines.push('');
     }
   }
 
@@ -102,12 +87,12 @@ export const renderConsoleReport = (
 
 export const writeTextReport = async (
   result: EvaluationResult,
-  options: ConsoleReportOptions & { cwd?: string; outputPath?: string } = {}
+  options: TextReportOptions & { cwd?: string; outputPath?: string } = {}
 ): Promise<string> => {
   const cwd = options.cwd ?? result.context.cwd;
   const outputPath = options.outputPath ?? path.join(DEFAULT_REPORT_DIR, 'report.txt');
   const absolutePath = path.resolve(cwd, outputPath);
-  const content = renderConsoleReport(result, { ...options, useColor: false });
+  const content = renderTextReport(result, options);
 
   await fs.mkdir(path.dirname(absolutePath), { recursive: true });
   await fs.writeFile(absolutePath, content, 'utf8');

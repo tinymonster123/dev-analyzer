@@ -1,9 +1,7 @@
 import { EvaluationResult, Recommendation } from '../evaluator/types';
 
-export interface ConsoleReportOptions {
-  useColor?: boolean;
+export interface TextReportOptions {
   verbose?: boolean;
-  indent?: number;
 }
 
 export interface JsonReportOptions {
