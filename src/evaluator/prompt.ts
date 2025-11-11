@@ -1,6 +1,6 @@
 import { LogTransformResult } from '../logTransformer/types';
-
-const PROMPT_HEADER = `You are Dev Analyzer, an assistant that reviews frontend build diagnostics and configuration to surface actionable insights.`;
+import { EvaluationContext, Recommendation } from './types';
+import { PROMPT_HEADER } from './constants';
 
 export interface BuildPromptOptions {
   transform: LogTransformResult;
@@ -44,4 +44,34 @@ export const buildBasePrompt = ({ transform, additionalContext }: BuildPromptOpt
 export const mergePrompts = (base: string, custom?: string): string => {
   if (!custom) return base;
   return `${base}\n\nUser instructions:\n${custom.trim()}`;
+};
+
+export const buildLlmPrompt = (
+  context: EvaluationContext,
+  recommendations: Recommendation[]
+): string => {
+  const { metrics } = context;
+
+  const issues = [...metrics.errors, ...metrics.warnings]
+    .map((issue) => `- [${issue.level.toUpperCase()}] ${issue.message}`)
+    .join('\n');
+
+  return [
+    context.prompt.combined,
+    '',
+    '构建事件概览：',
+    metrics.buildEvents
+      .map(
+        (event) =>
+          `- ${event.target} | ${event.type} | ${event.durationMs ?? 'N/A'} ms | modules: ${event.modules ?? 'N/A'}`
+      )
+      .join('\n'),
+    '',
+    '识别到的问题：',
+    issues || '- 无',
+    '',
+    recommendations.length ? `已有建议数量：${recommendations.length}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 };

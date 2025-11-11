@@ -1,3 +1,9 @@
+export const PROMPT_HEADER =
+  'You are Dev Analyzer, an assistant that reviews frontend build diagnostics and configuration to surface actionable insights.';
+
+export const DEFAULT_LLM_MODEL = 'gpt-4o-mini';
+export const DEFAULT_LLM_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+
 export const COMMON_CONFIGS: string[] = [
   'package.json',
   'tsconfig.json',
