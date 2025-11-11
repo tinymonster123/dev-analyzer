@@ -1,4 +1,6 @@
 import { EvaluationContext, LlmOptions, Recommendation } from './types';
+import { DEFAULT_LLM_ENDPOINT, DEFAULT_LLM_MODEL } from './constants';
+import { buildLlmPrompt } from './prompt';
 
 interface LlmResponse {
   summary: string;
@@ -6,9 +8,6 @@ interface LlmResponse {
   model: string;
   raw?: unknown;
 }
-
-const DEFAULT_MODEL = 'gpt-4o-mini';
-const DEFAULT_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 export const generateLlmInsights = async (
   context: EvaluationContext,
@@ -21,7 +20,7 @@ export const generateLlmInsights = async (
   }
 
   try {
-    const prompt = buildPrompt(context, recommendations);
+    const prompt = buildLlmPrompt(context, recommendations);
     const response = await callOpenAi(config, prompt);
     return {
       summary: response.summary,
@@ -41,38 +40,11 @@ const resolveConfig = (options?: LlmOptions): Required<LlmOptions> => {
 
   return {
     provider: options?.provider ?? 'openai',
-    model: options?.model ?? process.env.OPENAI_MODEL ?? DEFAULT_MODEL,
-    endpoint: options?.endpoint ?? process.env.OPENAI_BASE_URL ?? DEFAULT_ENDPOINT,
+    model: options?.model ?? process.env.OPENAI_MODEL ?? DEFAULT_LLM_MODEL,
+    endpoint: options?.endpoint ?? process.env.OPENAI_BASE_URL ?? DEFAULT_LLM_ENDPOINT,
     apiKey,
     enabled,
   };
-};
-
-const buildPrompt = (context: EvaluationContext, recommendations: Recommendation[]): string => {
-  const { metrics } = context;
-
-  const issues = [...metrics.errors, ...metrics.warnings]
-    .map((issue) => `- [${issue.level.toUpperCase()}] ${issue.message}`)
-    .join('\n');
-
-  return [
-    context.prompt.combined,
-    '',
-    '构建事件概览：',
-    metrics.buildEvents
-      .map(
-        (event) =>
-          `- ${event.target} | ${event.type} | ${event.durationMs ?? 'N/A'} ms | modules: ${event.modules ?? 'N/A'}`
-      )
-      .join('\n'),
-    '',
-    '识别到的问题：',
-    issues || '- 无',
-    '',
-    recommendations.length ? `已有建议数量：${recommendations.length}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
 };
 
 const callOpenAi = async (
@@ -95,7 +67,7 @@ const callOpenAi = async (
     temperature: 0.2,
   };
 
-  const response = await fetch(config.endpoint ?? DEFAULT_ENDPOINT, {
+  const response = await fetch(config.endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
