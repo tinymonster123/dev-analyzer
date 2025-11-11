@@ -52,6 +52,13 @@ export const renderConsoleReport = (
     });
   }
 
+  if (result.llm?.summary) {
+    lines.push('', bold('LLM Insights:'));
+    result.llm.summary.split(/\r?\n/).forEach((line) => {
+      lines.push(`${indent}${line}`);
+    });
+  }
+
   if (options.verbose) {
     lines.push('', bold('Config files:'));
     context.configFiles.forEach((file) => {
@@ -157,6 +164,13 @@ const renderMarkdownReport = (
     lines.push('');
   }
 
+  if (result.llm?.summary) {
+    lines.push('## LLM Insights');
+    lines.push('');
+    lines.push(result.llm.summary);
+    lines.push('');
+  }
+
   if (result.issues.length) {
     lines.push('## Issues');
     lines.push('');
@@ -237,6 +251,14 @@ const buildJsonPayload = (
 
   if (options.includeRawLogs) {
     payload.rawLogs = context.transform.rawLogs;
+  }
+
+  if (result.llm?.summary) {
+    payload.llm = {
+      summary: result.llm.summary,
+      provider: result.llm.provider,
+      model: result.llm.model,
+    };
   }
 
   return payload;

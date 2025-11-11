@@ -31,4 +31,9 @@ export interface JsonReportPayload {
   configFiles?: EvaluationResult['context']['configFiles'];
   relatedFiles?: EvaluationResult['context']['relatedFiles'];
   rawLogs?: EvaluationResult['context']['transform']['rawLogs'];
+  llm?: {
+    summary: string;
+    provider: string;
+    model: string;
+  };
 }
