@@ -38,6 +38,14 @@ export interface Recommendation {
   details?: Record<string, unknown>;
 }
 
+export interface LlmOptions {
+  provider?: 'openai';
+  model?: string;
+  endpoint?: string;
+  apiKey?: string;
+  enabled?: boolean;
+}
+
 export interface Thresholds {
   warningPenalty: number;
   errorPenalty: number;
@@ -46,6 +54,7 @@ export interface Thresholds {
 
 export interface EvaluateOptions {
   thresholds?: Partial<Thresholds>;
+  llm?: LlmOptions;
 }
 
 export interface EvaluationResult {
@@ -55,4 +64,10 @@ export interface EvaluationResult {
   recommendations: Recommendation[];
   issues: Issue[];
   context: EvaluationContext;
+  llm?: {
+    summary: string;
+    provider: string;
+    model: string;
+    raw?: unknown;
+  };
 }

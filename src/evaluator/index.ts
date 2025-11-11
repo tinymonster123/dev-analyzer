@@ -11,6 +11,7 @@ import {
   Thresholds,
 } from './types';
 import { Issue, LogMetrics, LogTransformResult } from '../logTransformer/types';
+import { generateLlmInsights } from './llm';
 import {
   COMMON_CONFIGS,
   FRAMEWORK_CONFIG_MAP,
@@ -47,10 +48,10 @@ export const loadEvaluationContext = async (
   };
 };
 
-export const evaluate = (
+export const evaluate = async (
   context: EvaluationContext,
   options: EvaluateOptions = {}
-): EvaluationResult => {
+): Promise<EvaluationResult> => {
   const { metrics } = context;
   const thresholds: Thresholds = {
     warningPenalty: 5,
@@ -75,6 +76,8 @@ export const evaluate = (
   const summary = buildSummary(metrics, score, longestBuild);
   const issues = [...metrics.errors, ...metrics.warnings];
 
+  const llmSummary = await generateLlmInsights(context, recommendations, options.llm);
+
   return {
     score,
     level,
@@ -82,6 +85,7 @@ export const evaluate = (
     recommendations,
     issues,
     context,
+    llm: llmSummary ?? undefined,
   };
 };
 
