@@ -1,4 +1,5 @@
 import { EvaluationContext, LlmOptions, Recommendation } from './types';
+import { Configuration, OpenAIApi } from 'openai';
 import { DEFAULT_LLM_ENDPOINT, DEFAULT_LLM_MODEL } from './constants';
 import { buildLlmPrompt } from './prompt';
 
@@ -51,7 +52,13 @@ const callOpenAi = async (
   config: Required<LlmOptions>,
   prompt: string
 ): Promise<{ summary: string; raw: unknown }> => {
-  const body = {
+  const configuration = new Configuration({
+    apiKey: config.apiKey,
+    basePath: config.endpoint,
+  });
+  const client = new OpenAIApi(configuration);
+
+  const response = await client.createChatCompletion({
     model: config.model,
     messages: [
       {
@@ -65,30 +72,13 @@ const callOpenAi = async (
       },
     ],
     temperature: 0.2,
-  };
-
-  const response = await fetch(config.endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify(body),
   });
 
-  if (!response.ok) {
-    throw new Error(`LLM 请求失败，状态码 ${response.status}`);
-  }
-
-  const data = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-
-  const summary = data.choices?.[0]?.message?.content?.trim();
+  const summary = response.data.choices?.[0]?.message?.content?.trim();
   if (!summary) {
     throw new Error('LLM 响应为空');
   }
 
-  return { summary, raw: data };
+  return { summary, raw: response.data };
 };
 
