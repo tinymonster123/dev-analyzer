@@ -40,21 +40,41 @@ export const runDevWithLogs = async (
     options.onLog?.(entry);
   };
 
+  const onSigint = () => {
+    try {
+      child.kill('SIGINT');
+    } catch {
+      // ignore
+    }
+    const interruptionEntry: LogEntry = {
+      type: 'stdout',
+      message: '[dev-analyzer] 捕获到 Ctrl+C，正在终止 dev 进程...',
+      timestamp: Date.now(),
+    };
+    handleLog(interruptionEntry);
+  };
+
+  process.once('SIGINT', onSigint);
+
   const stdoutPromise = collectStream(child.stdout, 'stdout', handleLog);
   const stderrPromise = collectStream(child.stderr, 'stderr', handleLog);
 
-  const exit = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
-    child.on('error', (error) => reject(error));
-    child.on('exit', (code, signal) => resolve({ code, signal }));
-  });
+  try {
+    const exit = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
+      child.on('error', (error) => reject(error));
+      child.on('exit', (code, signal) => resolve({ code, signal }));
+    });
 
-  await Promise.all([stdoutPromise, stderrPromise]);
+    await Promise.all([stdoutPromise, stderrPromise]);
 
-  return {
-    exitCode: exit.code,
-    signal: exit.signal,
-    logs,
-  };
+    return {
+      exitCode: exit.code,
+      signal: exit.signal,
+      logs,
+    };
+  } finally {
+    process.removeListener('SIGINT', onSigint);
+  }
 };
 
 /**
