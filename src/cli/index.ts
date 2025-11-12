@@ -30,6 +30,7 @@ interface CLIOptions {
   llmModel?: string;
   llmEndpoint?: string;
   llmApiKey?: string;
+  streamLogs: boolean;
 }
 
 const DEFAULT_OPTIONS: CLIOptions = {
@@ -42,6 +43,7 @@ const DEFAULT_OPTIONS: CLIOptions = {
   includeRelated: false,
   includeRawLogs: false,
   verbose: false,
+  streamLogs: true,
 };
 
 const HELP_TEXT = `Dev Analyzer CLI
@@ -62,6 +64,8 @@ Options:
   --include-raw-logs         JSON 报告附带原始日志
   --prompt <text>            为评估附加自定义提示语
   --prompt-file <path>       从文件读取自定义提示语
+  --stream-logs              实时打印 dev 命令日志（默认开启）
+  --no-stream-logs           不在终端输出 dev 日志
   --llm-model <name>         指定 LLM 模型（默认 gpt-4o-mini）
   --llm-endpoint <url>       指定 LLM 接口地址（默认 OpenAI API）
   --llm-api-key <key>        直接传入 API Key（也可使用 OPENAI_API_KEY 环境变量）
@@ -107,12 +111,21 @@ async function runAnalyze(options: CLIOptions) {
   if (!options.skipDev) {
     console.log('正在执行 dev 命令并收集日志...');
     try {
-      const devResult = await runDevWithLogs({ cwd, managerResult: manager });
+      const devResult = await runDevWithLogs({
+        cwd,
+        managerResult: manager,
+        onLog: options.streamLogs
+          ? (entry) => {
+              console.log(`[dev ${entry.type}] ${entry.message}`);
+            }
+          : undefined,
+      });
       if (devResult.exitCode !== 0) {
         console.warn(`dev 命令退出码 ${devResult.exitCode} (signal: ${devResult.signal ?? 'none'})`);
       }
       transform = transformLogs({ framework: manager.framework.name, logs: devResult.logs });
       console.log(`日志采集完成，共 ${devResult.logs.length} 行。`);
+      console.log('若采集过程中需提前结束，可在终端按 Ctrl+C 终止 dev 子进程。');
     } catch (error) {
       console.error('执行 dev 命令失败：', (error as Error).message);
       if (!transform.rawLogs.length) {
@@ -144,6 +157,7 @@ async function runAnalyze(options: CLIOptions) {
       apiKey,
     },
   });
+  console.log('已将结构化日志交给 LLM 进行分析，等待建议生成...');
 
   const reportOptions: JsonReportOptions = {
     cwd,
@@ -239,6 +253,12 @@ async function parseOptions(args: string[]): Promise<CLIOptions> {
         break;
       case '--verbose':
         options.verbose = true;
+        break;
+      case '--stream-logs':
+        options.streamLogs = true;
+        break;
+      case '--no-stream-logs':
+        options.streamLogs = false;
         break;
       case '--llm-model':
         options.llmModel = expectValue(args, ++i, '--llm-model 需要指定模型名称');
