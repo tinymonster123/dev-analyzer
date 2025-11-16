@@ -51,7 +51,7 @@ export const buildLlmPrompt = (
   context: EvaluationContext,
   recommendations: Recommendation[]
 ): string => {
-  const { metrics } = context;
+  const { metrics } = context.transform;
 
   const issues = [...metrics.errors, ...metrics.warnings]
     .map((issue) => `- [${issue.level.toUpperCase()}] ${issue.message}`)

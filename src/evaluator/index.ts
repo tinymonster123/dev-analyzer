@@ -34,8 +34,6 @@ export const loadEvaluationContext = async (
 
   return {
     cwd,
-    framework: transform.framework,
-    metrics: transform.metrics,
     transform,
     prompt: promptBundle,
     configFiles,
@@ -47,7 +45,7 @@ export const evaluate = async (
   context: EvaluationContext,
   options: EvaluateOptions = {}
 ): Promise<EvaluationResult> => {
-  const { metrics } = context;
+  const { metrics } = context.transform;
   const thresholds: Thresholds = {
     warningPenalty: 5,
     errorPenalty: 20,

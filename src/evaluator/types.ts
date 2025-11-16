@@ -22,8 +22,6 @@ export interface LoadEvaluationContextOptions {
 
 export interface EvaluationContext {
   cwd: string;
-  framework: string;
-  metrics: LogMetrics;
   transform: LogTransformResult;
   prompt: PromptBundle;
   configFiles: ProjectFileSnapshot[];

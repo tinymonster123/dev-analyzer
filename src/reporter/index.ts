@@ -17,15 +17,15 @@ const renderTextReport = (
   lines.push('Dev Analyzer Report');
   lines.push('===================');
   lines.push('');
-  lines.push(`Framework: ${context.framework || 'Unknown'}`);
+  lines.push(`Framework: ${context.transform.framework || 'Unknown'}`);
   lines.push(`Score: ${result.score}/100 (${result.level})`);
   lines.push(`Summary: ${result.summary}`);
   lines.push('');
 
-  if (context.metrics.buildEvents.length) {
-    const longest = Number(context.metrics.summary?.longestBuildMs ?? 0);
+  if (context.transform.metrics.buildEvents.length) {
+    const longest = Number(context.transform.metrics.summary?.longestBuildMs ?? 0);
     lines.push('Build Metrics:');
-    lines.push(`${indent}Events: ${context.metrics.buildEvents.length}`);
+    lines.push(`${indent}Events: ${context.transform.metrics.buildEvents.length}`);
     if (longest) {
       lines.push(`${indent}Longest build: ${longest} ms`);
     }
@@ -124,16 +124,16 @@ const renderMarkdownReport = (
 
   lines.push('# Dev Analyzer Report');
   lines.push('');
-  lines.push(`- **Framework**: ${context.framework || 'Unknown'}`);
+  lines.push(`- **Framework**: ${context.transform.framework || 'Unknown'}`);
   lines.push(`- **Score**: ${result.score}/100 (${result.level})`);
   lines.push(`- **Summary**: ${result.summary}`);
   lines.push('');
 
-  if (context.metrics.buildEvents.length) {
+  if (context.transform.metrics.buildEvents.length) {
     lines.push('## Build Metrics');
     lines.push('');
-    lines.push(`- Total build events: ${context.metrics.buildEvents.length}`);
-    const longest = Number(context.metrics.summary?.longestBuildMs ?? 0);
+    lines.push(`- Total build events: ${context.transform.metrics.buildEvents.length}`);
+    const longest = Number(context.transform.metrics.summary?.longestBuildMs ?? 0);
     if (longest) {
       lines.push(`- Longest build: ${longest} ms`);
     }
@@ -218,8 +218,8 @@ const buildJsonPayload = (
     summary: result.summary,
     recommendations: result.recommendations,
     issues: result.issues,
-    framework: context.framework,
-    metrics: context.metrics,
+    framework: context.transform.framework,
+    metrics: context.transform.metrics,
     prompt: {
       base: context.prompt.base,
       custom: context.prompt.custom,
