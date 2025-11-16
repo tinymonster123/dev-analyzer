@@ -1,4 +1,4 @@
-import { LogTransformResult, LogMetrics, Issue } from '../logTransformer/types';
+import { LogTransformResult, Issue, DiagnosticLevel } from '../logTransformer/types';
 
 export interface ProjectFileSnapshot {
   path: string;
@@ -28,13 +28,9 @@ export interface EvaluationContext {
   relatedFiles: ProjectFileSnapshot[];
 }
 
-export type RecommendationLevel = 'info' | 'warning' | 'critical';
-
-export interface Recommendation {
-  level: RecommendationLevel;
-  message: string;
-  details?: Record<string, unknown>;
-}
+// Recommendation is now an alias of Issue for consistency
+export type Recommendation = Issue;
+export type RecommendationLevel = DiagnosticLevel;
 
 export interface LlmOptions {
   provider?: 'openai';

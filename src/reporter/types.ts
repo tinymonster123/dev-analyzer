@@ -21,7 +21,7 @@ export interface JsonReportPayload {
   recommendations: Recommendation[];
   issues: EvaluationResult['issues'];
   framework: string;
-  metrics: EvaluationResult['context']['metrics'];
+  metrics: EvaluationResult['context']['transform']['metrics'];
   prompt: {
     base: string;
     custom?: string;

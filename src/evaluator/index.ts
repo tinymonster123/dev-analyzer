@@ -112,7 +112,8 @@ const buildRecommendations = (
   thresholds: Thresholds
 ): Recommendation[] => {
   const recommendations: Recommendation[] = [];
-  const { metrics, configFiles } = context;
+  const { metrics } = context.transform;
+  const { configFiles } = context;
 
   for (const error of metrics.errors) {
     recommendations.push({ level: 'critical', message: error.message, details: error.details });

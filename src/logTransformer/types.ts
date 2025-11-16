@@ -5,11 +5,12 @@ export interface TransformLogsOptions {
   logs: LogEntry[];
 }
 
+export type DiagnosticLevel = 'info' | 'warning' | 'error' | 'critical';
+
 export interface Issue {
-  level: 'error' | 'warning' | 'info';
+  level: DiagnosticLevel;
   message: string;
   details?: Record<string, unknown>;
-  occurrences?: number;
 }
 
 export type BuildEventType = 'initial' | 'incremental';
