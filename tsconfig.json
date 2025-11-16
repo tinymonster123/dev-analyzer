@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "module": "CommonJS",
+    "target": "es2022",
+    "module": "esnext",
     "moduleResolution": "Node",
     "rootDir": "src",
     "outDir": "dist",
@@ -9,8 +9,11 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "strict": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }
-
